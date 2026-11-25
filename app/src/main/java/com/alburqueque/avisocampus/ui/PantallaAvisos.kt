@@ -1,9 +1,13 @@
 package com.alburqueque.avisocampus.ui
 
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -52,6 +56,7 @@ fun PantallaAvisos(vm: AvisosViewModel) {
     val faltan by vm.faltan.collectAsState()
     val escuchando by vm.escuchandoAvion.collectAsState()
     val avisos by vm.avisos.collectAsState()
+    val mensaje by vm.mensaje.collectAsState()
 
     // Cuadro de permiso que dibuja Android: su respuesta va al ViewModel
     val lanzador = rememberLauncherForActivityResult(
@@ -68,7 +73,8 @@ fun PantallaAvisos(vm: AvisosViewModel) {
     // El ViewModel emite "muestra este aviso"; la pantalla, que sí tiene Context, lo muestra
     LaunchedEffect(Unit) {
         vm.eventos.collect { aviso ->
-            Notificador.mostrar(contexto, aviso)
+            val mostrado = Notificador.mostrar(contexto, aviso)
+            if (!mostrado) vm.noSePudoMostrar()
         }
     }
 
@@ -126,6 +132,25 @@ fun PantallaAvisos(vm: AvisosViewModel) {
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("Permitir notificaciones") }
+
+                mensaje?.let { texto ->
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(texto)
+                            OutlinedButton(onClick = { abrirAjustes(contexto) }) {
+                                Text("Abrir ajustes")
+                            }
+                        }
+                    }
+                }
             }
             Tarjeta("Avisos") {
                 Text("Muestra una notificación al instante.")
@@ -205,5 +230,21 @@ fun Tarjeta(
             )
             contenido()
         }
+    }
+}
+
+/** Abre la pantalla de notificaciones de la app en Ajustes para que el usuario dé el permiso. */
+private fun abrirAjustes(contexto: Context) {
+    val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, contexto.packageName)
+    } else {
+        // Android 7: no existe la pantalla de notificaciones, se abre la ficha de la app
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", contexto.packageName, null))
+    }
+    try {
+        contexto.startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        // Algún fabricante sin esa pantalla: no hacemos nada en vez de cerrar la app
     }
 }
