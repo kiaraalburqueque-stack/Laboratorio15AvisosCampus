@@ -55,6 +55,13 @@ fun PantallaAvisos(vm: AvisosViewModel) {
         if (Notificador.tienePermiso(contexto)) vm.permisoRespondido(true)
     }
 
+    // El ViewModel emite "muestra este aviso"; la pantalla, que sí tiene Context, lo muestra
+    LaunchedEffect(Unit) {
+        vm.eventos.collect { aviso ->
+            Notificador.mostrar(contexto, aviso)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -95,6 +102,9 @@ fun PantallaAvisos(vm: AvisosViewModel) {
             }
             Tarjeta("Avisos") {
                 Text("Muestra una notificación al instante.")
+                Button(onClick = vm::avisarAhora, modifier = Modifier.fillMaxWidth()) {
+                    Text("Mostrar aviso")
+                }
             }
             Tarjeta("Recordatorio") {
                 Text("Programa un aviso que llega a los 10 segundos.")
