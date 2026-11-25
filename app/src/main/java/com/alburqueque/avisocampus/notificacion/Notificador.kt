@@ -15,19 +15,31 @@ import androidx.core.content.ContextCompat
 import com.alburqueque.avisocampus.MainActivity
 import com.alburqueque.avisocampus.R
 import com.alburqueque.avisocampus.model.Aviso
+import com.alburqueque.avisocampus.model.Origen
 
 /** Todo lo que toca el sistema de notificaciones vive aquí, nunca en el ViewModel. */
 object Notificador {
     const val CANAL = "avisos"
+    const val CANAL_URGENTE = "urgentes"
 
-    /** Android 8+ exige un canal. Crearlo varias veces no duplica nada. */
+    /**
+     * Android 8+ exige canales. Dos canales: «Avisos» (normal) y «Urgentes» (IMPORTANCE_HIGH:
+     * aparece emergente arriba de la pantalla). Crearlos varias veces no duplica nada.
+     */
     fun crearCanal(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val canal = NotificationChannel(CANAL, "Avisos", NotificationManager.IMPORTANCE_DEFAULT)
+            val avisos = NotificationChannel(CANAL, "Avisos", NotificationManager.IMPORTANCE_DEFAULT)
+            val urgentes = NotificationChannel(
+                CANAL_URGENTE, "Urgentes", NotificationManager.IMPORTANCE_HIGH
+            ).apply { description = "Recordatorios que aparecen emergentes" }
             val manager = context.getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(canal)
+            manager.createNotificationChannels(listOf(avisos, urgentes))
         }
     }
+
+    /** El recordatorio va por el canal urgente; el resto, por el normal. */
+    private fun canalDe(aviso: Aviso): String =
+        if (aviso.origen == Origen.RECORDATORIO) CANAL_URGENTE else CANAL
 
     /** Antes de Android 13 no hace falta pedir permiso: se considera concedido. */
     fun tienePermiso(context: Context): Boolean {
@@ -52,11 +64,15 @@ object Notificador {
         }
         val pendiente = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
-        val notificacion = NotificationCompat.Builder(context, CANAL)
+        val urgente = aviso.origen == Origen.RECORDATORIO
+        val notificacion = NotificationCompat.Builder(context, canalDe(aviso))
             .setSmallIcon(R.drawable.ic_notificacion)
             .setContentTitle(aviso.titulo)
             .setContentText(aviso.texto)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            // En Android 7 la importancia la da la prioridad (no hay canales)
+            .setPriority(
+                if (urgente) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT
+            )
             .setContentIntent(pendiente)
             .setAutoCancel(true) // se quita al tocarla
             .build()
