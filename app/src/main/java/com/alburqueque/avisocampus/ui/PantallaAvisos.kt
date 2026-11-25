@@ -1,6 +1,8 @@
 package com.alburqueque.avisocampus.ui
 
 import android.Manifest
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,10 +23,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -34,8 +38,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.alburqueque.avisocampus.model.PermisoUi
 import com.alburqueque.avisocampus.notificacion.Notificador
+import com.alburqueque.avisocampus.receiver.ModoAvionReceiver
 import com.alburqueque.avisocampus.viewmodel.AvisosViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,6 +50,7 @@ fun PantallaAvisos(vm: AvisosViewModel) {
     val contexto = LocalContext.current
     val permiso by vm.permiso.collectAsState()
     val faltan by vm.faltan.collectAsState()
+    val escuchando by vm.escuchandoAvion.collectAsState()
 
     // Cuadro de permiso que dibuja Android: su respuesta va al ViewModel
     val lanzador = rememberLauncherForActivityResult(
@@ -61,6 +68,23 @@ fun PantallaAvisos(vm: AvisosViewModel) {
     LaunchedEffect(Unit) {
         vm.eventos.collect { aviso ->
             Notificador.mostrar(contexto, aviso)
+        }
+    }
+
+    // El receptor existe solo mientras el switch está activo, y se quita en onDispose
+    // (al apagar el switch, al rotar o al cerrar la pantalla) para no filtrar memoria.
+    DisposableEffect(escuchando) {
+        if (escuchando) {
+            val receptor = ModoAvionReceiver { activo -> vm.alCambiarModoAvion(activo) }
+            ContextCompat.registerReceiver(
+                contexto,
+                receptor,
+                IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            onDispose { contexto.unregisterReceiver(receptor) }
+        } else {
+            onDispose { }
         }
     }
 
@@ -131,7 +155,13 @@ fun PantallaAvisos(vm: AvisosViewModel) {
                 }
             }
             Tarjeta("Receptor de anuncios") {
-                Text("Escucha anuncios del sistema, como el modo avión.")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Escuchar el modo avión", modifier = Modifier.weight(1f))
+                    Switch(checked = escuchando, onCheckedChange = vm::cambiarEscucha)
+                }
             }
             Tarjeta("Historial") {
                 Text("Aquí aparecerán los avisos generados.")

@@ -37,6 +37,10 @@ class AvisosViewModel(private val repo: AvisosRepository) : ViewModel() {
     private val _faltan = MutableStateFlow<Int?>(null)
     val faltan: StateFlow<Int?> = _faltan.asStateFlow()
 
+    // Receptor del modo avión: la pantalla lo registra solo mientras esto sea true
+    private val _escuchandoAvion = MutableStateFlow(false)
+    val escuchandoAvion: StateFlow<Boolean> = _escuchandoAvion.asStateFlow()
+
     /** La pantalla avisa la respuesta del cuadro de permiso (o que ya estaba concedido). */
     fun permisoRespondido(concedido: Boolean) {
         _permiso.value = if (concedido) PermisoUi.Concedido else PermisoUi.Denegado
@@ -75,5 +79,19 @@ class AvisosViewModel(private val repo: AvisosRepository) : ViewModel() {
     /** Cancela la cuenta regresiva: no se emite ningún aviso. */
     fun cancelarRecordatorio() {
         trabajo?.cancel()
+    }
+
+    fun cambiarEscucha(valor: Boolean) {
+        _escuchandoAvion.value = valor
+    }
+
+    /** Lo llama el receptor (a través de la pantalla) cuando cambia el modo avión. */
+    fun alCambiarModoAvion(activo: Boolean) {
+        viewModelScope.launch {
+            val aviso = repo.registrar(
+                "Modo avión", if (activo) "Activado" else "Desactivado", Origen.MODO_AVION
+            )
+            _eventos.emit(aviso)
+        }
     }
 }
