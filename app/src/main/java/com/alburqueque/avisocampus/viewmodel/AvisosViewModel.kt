@@ -41,6 +41,10 @@ class AvisosViewModel(private val repo: AvisosRepository) : ViewModel() {
     private val _escuchandoAvion = MutableStateFlow(false)
     val escuchandoAvion: StateFlow<Boolean> = _escuchandoAvion.asStateFlow()
 
+    // Receptor del cargador, con su propio switch
+    private val _escuchandoCargador = MutableStateFlow(false)
+    val escuchandoCargador: StateFlow<Boolean> = _escuchandoCargador.asStateFlow()
+
     /** La pantalla avisa la respuesta del cuadro de permiso (o que ya estaba concedido). */
     fun permisoRespondido(concedido: Boolean) {
         _permiso.value = if (concedido) PermisoUi.Concedido else PermisoUi.Denegado
@@ -99,5 +103,19 @@ class AvisosViewModel(private val repo: AvisosRepository) : ViewModel() {
     /** La pantalla no pudo mostrar la notificación (sin permiso): el aviso ya quedó en el historial. */
     fun noSePudoMostrar() {
         _mensaje.value = "Sin permiso: el aviso se guardó en el historial, pero no se mostró"
+    }
+
+    fun cambiarEscuchaCargador(valor: Boolean) {
+        _escuchandoCargador.value = valor
+    }
+
+    /** Lo llama el receptor del cargador (a través de la pantalla). */
+    fun alCambiarCargador(conectado: Boolean) {
+        viewModelScope.launch {
+            val aviso = repo.registrar(
+                "Cargador", if (conectado) "Conectado" else "Desconectado", Origen.CARGADOR
+            )
+            _eventos.emit(aviso)
+        }
     }
 }

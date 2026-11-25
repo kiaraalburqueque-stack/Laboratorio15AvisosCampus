@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.alburqueque.avisocampus.model.PermisoUi
 import com.alburqueque.avisocampus.notificacion.Notificador
+import com.alburqueque.avisocampus.receiver.CargadorReceiver
 import com.alburqueque.avisocampus.receiver.ModoAvionReceiver
 import com.alburqueque.avisocampus.viewmodel.AvisosViewModel
 
@@ -55,6 +56,7 @@ fun PantallaAvisos(vm: AvisosViewModel) {
     val permiso by vm.permiso.collectAsState()
     val faltan by vm.faltan.collectAsState()
     val escuchando by vm.escuchandoAvion.collectAsState()
+    val escuchandoCargador by vm.escuchandoCargador.collectAsState()
     val avisos by vm.avisos.collectAsState()
     val mensaje by vm.mensaje.collectAsState()
 
@@ -88,6 +90,23 @@ fun PantallaAvisos(vm: AvisosViewModel) {
                 receptor,
                 IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED),
                 ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            onDispose { contexto.unregisterReceiver(receptor) }
+        } else {
+            onDispose { }
+        }
+    }
+
+    // Mismo patrón para el cargador: registrado solo con su switch activo y quitado en onDispose
+    DisposableEffect(escuchandoCargador) {
+        if (escuchandoCargador) {
+            val receptor = CargadorReceiver { conectado -> vm.alCambiarCargador(conectado) }
+            val filtro = IntentFilter().apply {
+                addAction(Intent.ACTION_POWER_CONNECTED)
+                addAction(Intent.ACTION_POWER_DISCONNECTED)
+            }
+            ContextCompat.registerReceiver(
+                contexto, receptor, filtro, ContextCompat.RECEIVER_NOT_EXPORTED
             )
             onDispose { contexto.unregisterReceiver(receptor) }
         } else {
@@ -187,6 +206,16 @@ fun PantallaAvisos(vm: AvisosViewModel) {
                 ) {
                     Text("Escuchar el modo avión", modifier = Modifier.weight(1f))
                     Switch(checked = escuchando, onCheckedChange = vm::cambiarEscucha)
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Escuchar el cargador", modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = escuchandoCargador,
+                        onCheckedChange = vm::cambiarEscuchaCargador
+                    )
                 }
             }
             HistorialAvisos(avisos)
