@@ -75,19 +75,19 @@ AvisosRepository (interface)   View recibe el evento y llama a
 
 | Prueba | Resultado esperado | OK |
 |---|---|---|
-| Ajustes → Apps → AvisosCampus → Notificaciones | Existe el canal Avisos | ☐ |
-| Pulsar Permitir notificaciones | Aparece el cuadro de Android y la etiqueta cambia | ☐ |
-| Pulsar Mostrar aviso | Aparece la notificación Tarea lista | ☐ |
-| Pulsar Mostrar aviso dos veces | Aparecen dos notificaciones distintas | ☐ |
-| Tocar la notificación | Se abre la app y la notificación desaparece | ☐ |
-| Recordar en 10 s | Cuenta regresiva y aviso al llegar a 0 | ☐ |
-| Recordar y minimizar la app | El aviso llega igual | ☐ |
-| Recordar y cancelar | No llega ningún aviso | ☐ |
-| Switch activado y cambiar el modo avión | Aviso Activado y luego Desactivado | ☐ |
-| Switch desactivado y cambiar el modo avión | No hay aviso | ☐ |
-| Permiso denegado y Mostrar aviso | Mensaje de error, aviso en el historial y la app no se cierra | ☐ |
-| Rotar la pantalla durante el recordatorio | La cuenta regresiva continúa | ☐ |
-| Revisar el código | No hay `Context` en `viewmodel/` y todo receptor se quita en `onDispose` | ☐ |
+| Ajustes → Apps → AvisosCampus → Notificaciones | Existe el canal Avisos | ✅ |
+| Pulsar Permitir notificaciones | Aparece el cuadro de Android y la etiqueta cambia | ✅ |
+| Pulsar Mostrar aviso | Aparece la notificación Tarea lista | ✅ |
+| Pulsar Mostrar aviso dos veces | Aparecen dos notificaciones distintas | ✅ |
+| Tocar la notificación | Se abre la app y la notificación desaparece | ✅ |
+| Recordar en 10 s | Cuenta regresiva y aviso al llegar a 0 | ✅ |
+| Recordar y minimizar la app | El aviso llega igual | ✅ |
+| Recordar y cancelar | No llega ningún aviso | ✅ |
+| Switch activado y cambiar el modo avión | Aviso Activado y luego Desactivado | ✅ |
+| Switch desactivado y cambiar el modo avión | No hay aviso | ✅ |
+| Permiso denegado y Mostrar aviso | Mensaje de error, aviso en el historial y la app no se cierra | ✅ |
+| Rotar la pantalla durante el recordatorio | La cuenta regresiva continúa | ✅ |
+| Revisar el código | No hay `Context` en `viewmodel/` y todo receptor se quita en `onDispose` | ✅ |
 
 ## Para pensar
 
