@@ -68,7 +68,12 @@ object Notificador {
         val notificacion = NotificationCompat.Builder(context, canalDe(aviso))
             .setSmallIcon(R.drawable.ic_notificacion)
             .setContentTitle(aviso.titulo)
-            .setContentText(aviso.texto)
+            .setContentText(aviso.texto) // una línea cuando está contraída
+            // Al expandirla (deslizar hacia abajo) se ve el texto completo, con su origen y hora
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("${aviso.texto}\n${aviso.origen.texto} · ${aviso.hora}")
+            )
             // En Android 7 la importancia la da la prioridad (no hay canales)
             .setPriority(
                 if (urgente) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT
