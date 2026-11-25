@@ -2,14 +2,17 @@ package com.alburqueque.avisocampus.notificacion
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.alburqueque.avisocampus.MainActivity
 import com.alburqueque.avisocampus.R
 import com.alburqueque.avisocampus.model.Aviso
 
@@ -42,12 +45,20 @@ object Notificador {
     fun mostrar(context: Context, aviso: Aviso): Boolean {
         if (!tienePermiso(context)) return false
 
+        // Al tocar la notificación se abre la app. SINGLE_TOP + CLEAR_TOP reutiliza la pantalla
+        // si ya estaba abierta (no se pierde el historial). FLAG_IMMUTABLE: nadie puede cambiar el Intent.
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendiente = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+
         val notificacion = NotificationCompat.Builder(context, CANAL)
             .setSmallIcon(R.drawable.ic_notificacion)
             .setContentTitle(aviso.titulo)
             .setContentText(aviso.texto)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setAutoCancel(true)
+            .setContentIntent(pendiente)
+            .setAutoCancel(true) // se quita al tocarla
             .build()
 
         // El id del aviso hace que cada notificación sea distinta (no se reemplazan)
