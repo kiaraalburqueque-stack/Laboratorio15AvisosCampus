@@ -18,6 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,6 +43,7 @@ import com.alburqueque.avisocampus.viewmodel.AvisosViewModel
 fun PantallaAvisos(vm: AvisosViewModel) {
     val contexto = LocalContext.current
     val permiso by vm.permiso.collectAsState()
+    val faltan by vm.faltan.collectAsState()
 
     // Cuadro de permiso que dibuja Android: su respuesta va al ViewModel
     val lanzador = rememberLauncherForActivityResult(
@@ -108,6 +110,25 @@ fun PantallaAvisos(vm: AvisosViewModel) {
             }
             Tarjeta("Recordatorio") {
                 Text("Programa un aviso que llega a los 10 segundos.")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { vm.recordarEn(10) },
+                        enabled = faltan == null, // deshabilitado mientras corre
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Recordar en 10 s") }
+                    OutlinedButton(
+                        onClick = vm::cancelarRecordatorio,
+                        enabled = faltan != null, // solo mientras corre
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Cancelar") }
+                }
+                faltan?.let { n ->
+                    Text(
+                        text = "Faltan $n s",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
             Tarjeta("Receptor de anuncios") {
                 Text("Escucha anuncios del sistema, como el modo avión.")

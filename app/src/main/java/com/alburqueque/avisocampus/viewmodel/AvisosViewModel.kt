@@ -6,6 +6,8 @@ import com.alburqueque.avisocampus.data.AvisosRepository
 import com.alburqueque.avisocampus.model.Aviso
 import com.alburqueque.avisocampus.model.Origen
 import com.alburqueque.avisocampus.model.PermisoUi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -30,6 +32,11 @@ class AvisosViewModel(private val repo: AvisosRepository) : ViewModel() {
     private val _mensaje = MutableStateFlow<String?>(null)
     val mensaje: StateFlow<String?> = _mensaje.asStateFlow()
 
+    // Recordatorio: segundos que faltan, o null si no hay uno activo
+    private var trabajo: Job? = null
+    private val _faltan = MutableStateFlow<Int?>(null)
+    val faltan: StateFlow<Int?> = _faltan.asStateFlow()
+
     /** La pantalla avisa la respuesta del cuadro de permiso (o que ya estaba concedido). */
     fun permisoRespondido(concedido: Boolean) {
         _permiso.value = if (concedido) PermisoUi.Concedido else PermisoUi.Denegado
@@ -41,5 +48,32 @@ class AvisosViewModel(private val repo: AvisosRepository) : ViewModel() {
             val aviso = repo.registrar("Tarea lista", "Tu entrega fue registrada", Origen.BOTON)
             _eventos.emit(aviso)
         }
+    }
+
+    /**
+     * Cuenta regresiva en viewModelScope: sigue aunque se rote la pantalla o se minimice la app.
+     * Si ya hay un recordatorio activo, no hace nada.
+     */
+    fun recordarEn(segundos: Int = 10) {
+        if (trabajo?.isActive == true) return
+        trabajo = viewModelScope.launch {
+            try {
+                for (s in segundos downTo 1) {
+                    _faltan.value = s
+                    delay(1000)
+                }
+                val aviso = repo.registrar(
+                    "Recordatorio", "Revisa tu laboratorio pendiente", Origen.RECORDATORIO
+                )
+                _eventos.emit(aviso)
+            } finally {
+                _faltan.value = null // termine bien o cancelado
+            }
+        }
+    }
+
+    /** Cancela la cuenta regresiva: no se emite ningún aviso. */
+    fun cancelarRecordatorio() {
+        trabajo?.cancel()
     }
 }
